@@ -1,0 +1,41 @@
+# Author: Xavier Martin
+# Version: 1.0
+version: '3.7'
+
+# This container is our dev container, where we will have all the dev tools installed.
+# Used to then go the module folder and spin up sibling containers
+services:
+  development:
+    container_name: ${PROJECT_ID}
+    build:
+      args:
+        - PROJECT_ID
+      context: ./
+      dockerfile: ./Dockerfile
+    image: mightyfrogs/${PROJECT_ID}-dev:1.0.0
+    environment:
+      - HOST_PATH
+      - REACT_NATIVE_PACKAGER_HOSTNAME=${HOST_IP}
+    ports:
+      - ${HOST_EXPO_PORT}:${EXPO_PORT}
+      - ${HOST_EXPO_DEV_PORT}:${EXPO_DEV_PORT}
+      - ${HOST_METRO_PORT}:${METRO_PORT}
+    volumes:
+      - development-data:/home/${PROJECT_ID}/application:delegated
+      # link to the host docker socket, i.e the docker in the container will use the host docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: tail -f /dev/null
+
+volumes:
+  # our application source
+  development-data: #./
+    name: "${PROJECT_ID}-data-development"
+    driver: local
+    driver_opts:
+      type: none
+      device: ${HOST_PATH} # this is the mount path on the host
+      o: bind
+
+networks:
+  default:
+    name: "${PROJECT_ID}-network"
