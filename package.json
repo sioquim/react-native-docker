@@ -1,6 +1,6 @@
 {
   "name": "react-native-docker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "dockerised react native project",
   "main": "index.js",
   "scripts": {
