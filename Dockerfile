@@ -44,20 +44,27 @@ ARG USERNAME=${PROJECT_ID}
 USER root
 RUN apk update \
     && apk add \
-        sudo \
-        docker \
-        'py-pip' \
-        zsh \
-        vim \
-        curl
+    sudo \
+    docker \
+    'py-pip' \
+    zsh \
+    vim \
+    curl
 
 RUN echo "${USERNAME}"
+
 # setting proper permission and UID/GID, could use groupmod -g 999 docker maybe
 RUN groupdel ping \
     && groupdel docker \
     && groupadd -g 999 docker \
     && usermod -aG docker ${USERNAME} \
     && usermod -aG root ${USERNAME}
+
+# fix python installation issue
+RUN apk add --no-cache --virtual .build-deps g++ python3-dev libffi-dev openssl-dev && \
+    apk add --no-cache --update python3 && \
+    pip3 install --upgrade pip setuptools
+RUN pip3 install pendulum service_identity
 
 # install docker compose
 RUN sudo -H pip install --upgrade pip docker-compose
@@ -87,28 +94,28 @@ RUN git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen"
 
 # edit zshrc
 RUN printf "\
-export TERM=\"xterm-256color\" \n\
-export LC_ALL=en_US.UTF-8 \n\
-export LANG=en_US.UTF-8 \n\
-export PATH=/usr/local/sbin:\${PATH} \n\
-export PATH=~/.local/bin:\${PATH} \n\
-export PATH=~/application/node_modules/.bin:\${PATH} \n\
-\n\
-fpath=(~/.zsh_completion \"\${fpath[@]}\") \n\
-\n\
-# Source Profile \n\
-[[ -e ~/.profile ]] && emulate sh -c 'source ~/.profile' \n\
-\n\
-# finally load zgen \n\
-source \"\${HOME}/.zgen/zgen.zsh\" \n\
-\n\
-# if the init scipt doesn't exist \n\
-if ! zgen saved; then \n\
+    export TERM=\"xterm-256color\" \n\
+    export LC_ALL=en_US.UTF-8 \n\
+    export LANG=en_US.UTF-8 \n\
+    export PATH=/usr/local/sbin:\${PATH} \n\
+    export PATH=~/.local/bin:\${PATH} \n\
+    export PATH=~/application/node_modules/.bin:\${PATH} \n\
+    \n\
+    fpath=(~/.zsh_completion \"\${fpath[@]}\") \n\
+    \n\
+    # Source Profile \n\
+    [[ -e ~/.profile ]] && emulate sh -c 'source ~/.profile' \n\
+    \n\
+    # finally load zgen \n\
+    source \"\${HOME}/.zgen/zgen.zsh\" \n\
+    \n\
+    # if the init scipt doesn't exist \n\
+    if ! zgen saved; then \n\
     echo \"Creating a zgen save\" \n\
-\n\
+    \n\
     # Load the oh-my-zsh's library. \n\
     zgen oh-my-zsh \n\
-\n\
+    \n\
     # plugins \n\
     zgen oh-my-zsh plugins/git \n\
     zgen oh-my-zsh plugins/command-not-found \n\
@@ -121,12 +128,12 @@ if ! zgen saved; then \n\
     \n\
     # save all to init script \n\
     zgen save \n\
-fi \n\
-\n\
-export PROMPT_SUBST=true \n\
-export PROMPT_PERCENT=true \n\
-export PROMPT='${PROJECT_ID}$ ' \n\
-export RPROMPT='' \n" > ~/.zshrc
+    fi \n\
+    \n\
+    export PROMPT_SUBST=true \n\
+    export PROMPT_PERCENT=true \n\
+    export PROMPT='${PROJECT_ID}$ ' \n\
+    export RPROMPT='' \n" > ~/.zshrc
 
 RUN git config --global credential.helper store
 
@@ -134,6 +141,6 @@ RUN git config --global credential.helper store
 WORKDIR "application"
 
 # be sure all files in the user root folder are accessible by the user
-# USER root
-# RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
-# USER ${USERNAME}
+USER root
+RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
+USER ${USERNAME}
